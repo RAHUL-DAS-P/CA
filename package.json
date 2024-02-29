@@ -1,0 +1,14 @@
+{
+  "name": "campus_ambassador",
+  "version": "1.0.0",
+  "description": "drishti",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "rahul",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.3"
+  }
+}

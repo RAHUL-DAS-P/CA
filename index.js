@@ -34,9 +34,11 @@ app.get("/", async (req, res) => {
                 const participants = result2.data["results"];
                 for (let j = 0; j < participants.length; j++) {
                     try {
-                        if (participants[j]["extra_questions"] != []) {
-                            console.log(participants[j]);
-                            console.log(participants[j]["extra_questions"][0]["answer"]);
+
+                        if (participants[j]["extra_questions"].length !== 0) {
+
+                            const referal_code = participants[j]["extra_questions"][0]["answer"];
+                            console.log(referal_code);
                         };
                     } catch {
                         console.log("error");

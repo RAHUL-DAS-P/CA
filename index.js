@@ -142,6 +142,22 @@ app.get("/", async (req, res) => {
         }
 
         for (let index = 0; index < data.length; index++) {
+
+            await client.createIfNotExists({
+                _id: data[index].referal_code,
+                _type: 'ambassador',
+                name: data[index].name,
+                ref_code: data[index].referal_code,
+                ref_count: data[index].count,
+                college: data[index].college,
+                share_score: 0,
+
+            }).then(res => {
+                console.log(`${index} Person was created, document ID is ${res._id}`)
+            }).catch(err => {
+                console.error('Error:', err)
+            });
+
             await client
                 .patch(`${data[index].referal_code}`) // Document ID to patch
                 .set({ ref_count: data[index].count, ref_code: data[index].referal_code }) // Shallow merge
@@ -153,20 +169,6 @@ app.get("/", async (req, res) => {
                 .catch((err) => {
                     console.error('Oh no, the update failed: ', err.message)
                 });
-            // await client.createIfNotExists({
-            //     _id: data[index].referal_code,
-            //     _type: 'ambassador',
-            //     name: data[index].name,
-            //     ref_code: data[index].referal_code,
-            //     ref_count: data[index].count,
-            //     college: data[index].college,
-            //     share_score: 0,
-
-            // }).then(res => {
-            //     console.log(`${index} Person was created, document ID is ${res._id}`)
-            // }).catch(err => {
-            //     console.error('Error:', err)
-            // });
         };
 
 

@@ -2,11 +2,27 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const dotenv = require('dotenv');
+const readExcelFile = require('./extraction.js');
+const { createClient } = require('@sanity/client')
+
 dotenv.config();
+
+
+const client = createClient({
+    projectId: '39xsv51w', // you can find this in sanity.json
+    dataset: 'original', // or the name of your dataset
+    token: process.env.TOKEN, // or leave blank for unauthenticated usage
+    useCdn: false // `false` if you want to ensure fresh data
+});
+
 
 
 
 const app = express();
+const data = readExcelFile('Referral codes.xlsx');
+for (let i = 0; i < data.length; i++) {
+    console.log(`${i} ${data[i]}`);
+}
 app.use(bodyParser.json());
 
 
@@ -22,12 +38,35 @@ app.get("/", async (req, res) => {
         event_ids = result1.data["results"];
         console.log(event_ids.length);
         for (let i = 0; i < event_ids.length; i++) {
+            const url3 = `https://dev.bharatversity.com/events/website/api/event-amount-overview-list-api/${event_ids[i].id}/?search=&payment_status=&limit=`;
             const url2 = `https://dev.bharatversity.com/events/website/api/registered-individuals-api/${event_ids[i].id}/?limit=&offset=&search=`;
             const result2 = await axios.get(url2, {
                 headers: {
                     'Authorization': process.env.AUTH,
                 }
             });
+            const result3 = await axios.get(url3, {
+                headers: {
+                    'Authorization': process.env.AUTH,
+                }
+            });
+
+            let event_fee = null;
+
+            if (
+                result3 &&
+                result3.data &&
+                result3.data.results &&
+                result3.data.results[0] &&
+                result3.data.results[0]["amount"]
+            ) {
+                event_fee = result3.data.results[0]["amount"] / 100;
+
+            }
+            console.log(event_ids[i].title);
+            console.log(event_fee);
+
+
             if (result2.data["count"] > 0) {
                 console.log(event_ids[i].id);
                 console.log(result2.data.count);
@@ -39,16 +78,105 @@ app.get("/", async (req, res) => {
 
                             const referal_code = participants[j]["extra_questions"][0]["answer"];
                             console.log(referal_code);
+
+                            for (let k = 0; k < data.length; k++) {
+                                if (data[k].referal_code.toLowerCase() === referal_code.toLowerCase()) {
+                                    let points = 0;
+
+                                    if (event_fee === null) {
+                                        // console.error("Error: event_fee is null");
+                                    } else {
+                                        // Convert event_fee back to the original value
+                                        const originalValue = event_fee / 1.05;
+
+                                        if (originalValue >= 50 && originalValue < 99) {
+                                            points = 10;
+                                        } else if (originalValue >= 99 && originalValue < 299) {
+                                            points = 15;
+                                        } else if (originalValue >= 299 && originalValue < 599) {
+                                            points = 20;
+                                        } else if (originalValue >= 599 && originalValue < 999) {
+                                            points = 25;
+                                        } else if (originalValue >= 1000 && originalValue < 1499) {
+                                            points = 30;
+                                        } else if (originalValue >= 1499 && originalValue < 2499) {
+                                            points = 40;
+                                        } else if (originalValue >= 2500 && originalValue < 4999) {
+                                            points = 50;
+                                        } else if (originalValue >= 9999) {
+                                            points = 60;
+                                        } else {
+                                            // console.error("Error: originalValue is out of range");
+                                        }
+                                    }
+
+
+                                    data[k].count += points;
+                                    console.log(data[k].count);
+                                }
+                            }
+
                         };
                     } catch {
                         console.log("error");
                     }
                 }
+
             }
 
+
+
+
+
+
         };
+
+
+
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].count > 0) {
+                console.log(data[i]);
+            }
+        }
+
+        for (let index = 0; index < data.length; index++) {
+            await client
+                .patch(`${data[index].referal_code}`) // Document ID to patch
+                .set({ ref_count: data[index].count, ref_code: data[index].referal_code }) // Shallow merge
+                .commit() // Perform the patch and return a promise
+                .then((updatedBike) => {
+                    console.log('Hurray, the bike is updated! New document:')
+                    console.log(updatedBike)
+                })
+                .catch((err) => {
+                    console.error('Oh no, the update failed: ', err.message)
+                });
+            // await client.createIfNotExists({
+            //     _id: data[index].referal_code,
+            //     _type: 'ambassador',
+            //     name: data[index].name,
+            //     ref_code: data[index].referal_code,
+            //     ref_count: data[index].count,
+            //     college: data[index].college,
+            //     share_score: 0,
+
+            // }).then(res => {
+            //     console.log(`${index} Person was created, document ID is ${res._id}`)
+            // }).catch(err => {
+            //     console.error('Error:', err)
+            // });
+        };
+
+
+
+        for (let index = 0; index < data.length; index++) {
+            await client.getDocument(data[index].referal_code).then((item) => {
+                console.log(`${item.name} (${item.share_score} ) (${item.ref_code} ) (${item.ref_count} )`)
+            })
+        }
+
     } catch (error) {
-        res.send(error.response.data);
+        res.send(error);
     }
     res.send("Hello World");
 });

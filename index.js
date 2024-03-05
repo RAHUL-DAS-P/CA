@@ -3,7 +3,9 @@ const bodyParser = require('body-parser');
 const axios = require('axios');
 const dotenv = require('dotenv');
 const readExcelFile = require('./extraction.js');
-const { createClient } = require('@sanity/client')
+const { createClient } = require('@sanity/client');
+const cors = require('cors');
+
 
 dotenv.config();
 
@@ -24,7 +26,7 @@ for (let i = 0; i < data.length; i++) {
     console.log(`${i} ${data[i]}`);
 }
 app.use(bodyParser.json());
-
+app.use(cors());
 
 
 app.get("/", async (req, res) => {

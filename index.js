@@ -41,7 +41,7 @@ app.get("/", async (req, res) => {
         console.log(event_ids.length);
         for (let i = 0; i < event_ids.length; i++) {
             const url3 = `https://dev.bharatversity.com/events/website/api/event-amount-overview-list-api/${event_ids[i].id}/?search=&payment_status=&limit=`;
-            const url2 = `https://dev.bharatversity.com/events/website/api/registered-individuals-api/${event_ids[i].id}/?limit=&offset=&search=`;
+            const url2 = `https://dev.bharatversity.com/events/website/api/registered-individuals-api/${event_ids[i].id}/?limit=1000&offset=&search=`;
             const result2 = await axios.get(url2, {
                 headers: {
                     'Authorization': process.env.AUTH,
@@ -82,7 +82,7 @@ app.get("/", async (req, res) => {
                             console.log(referal_code);
 
                             for (let k = 0; k < data.length; k++) {
-                                if (data[k].referal_code.toLowerCase() === referal_code.toLowerCase()) {
+                                if (data[k].referal_code.toLowerCase().trim() === referal_code.toLowerCase().trim()) {
                                     let points = 0;
 
                                     if (event_fee === null) {
@@ -135,11 +135,11 @@ app.get("/", async (req, res) => {
 
 
 
-        for (let i = 0; i < data.length; i++) {
-            if (data[i].count > 0) {
-                console.log(data[i]);
-            }
-        }
+        // for (let i = 0; i < data.length; i++) {
+        //     if (data[i].count > 0) {
+        //         console.log(data[i]);
+        //     }
+        // }
 
         for (let index = 0; index < data.length; index++) {
 

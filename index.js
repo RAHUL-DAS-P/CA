@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const readExcelFile = require('./extraction.js');
 const { createClient } = require('@sanity/client');
 const cors = require('cors');
+const reader = require('xlsx')
+
 
 
 dotenv.config();
@@ -22,8 +24,14 @@ const client = createClient({
 
 const app = express();
 const data = readExcelFile('Referral codes.xlsx');
+ambassador_data = [];
 for (let i = 0; i < data.length; i++) {
     console.log(`${i} ${data[i]}`);
+    ambassador_data.push({
+        name: data[i].name,
+        referal_code: data[i].referal_code,
+        ref_score: 0,
+    });
 }
 app.use(bodyParser.json());
 app.use(cors());
@@ -87,7 +95,13 @@ app.get("/", async (req, res) => {
 
                                     if (event_fee === null) {
                                         // console.error("Error: event_fee is null");
-                                    } else {
+                                    } else if (event_ids[i].title == "ATHER EV WORKSHOP") {
+                                        points = 50;
+                                    }
+                                    // else if (event_ids[i].title == "Electrify Your Ride: The IC to E-Bike Experience (Retrofitting workshop)") {
+                                    //     points = 100;
+                                    // }
+                                    else {
                                         // Convert event_fee back to the original value
                                         const originalValue = event_fee / 1.05;
 
@@ -114,6 +128,7 @@ app.get("/", async (req, res) => {
 
 
                                     data[k].count += points;
+                                    ambassador_data[k].ref_score += points;
                                     console.log(data[k].count);
                                 }
                             }
@@ -135,11 +150,17 @@ app.get("/", async (req, res) => {
 
 
 
-        // for (let i = 0; i < data.length; i++) {
-        //     if (data[i].count > 0) {
-        //         console.log(data[i]);
-        //     }
-        // }
+        // Requiring module 
+
+        // Reading our test file 
+
+
+
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].count > 0) {
+                console.log(data[i]);
+            }
+        }
 
         for (let index = 0; index < data.length; index++) {
 
@@ -171,13 +192,20 @@ app.get("/", async (req, res) => {
                 });
         };
 
+        const file = reader.readFile('test.xlsx');
+        const ws = reader.utils.json_to_sheet(ambassador_data);
+        reader.utils.book_append_sheet(file, ws, "Sheet2")
+
+        // Writing to our file 
+        reader.writeFile(file, 'test.xlsx');
 
 
-        for (let index = 0; index < data.length; index++) {
-            await client.getDocument(data[index].referal_code).then((item) => {
-                console.log(`${item.name} (${item.share_score} ) (${item.ref_code} ) (${item.ref_count} )`)
-            })
-        }
+
+        // for (let index = 0; index < data.length; index++) {
+        //     await client.getDocument(data[index].referal_code).then((item) => {
+        //         console.log(`${item.name} (${item.share_score} ) (${item.ref_code} ) (${item.ref_count} )`)
+        //     })
+        // }
 
     } catch (error) {
         res.send(error);
